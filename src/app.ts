@@ -1,4 +1,4 @@
-import { Client, LocalAuth, Message, MessageAck } from 'whatsapp-web.js';
+import { Client, LocalAuth, Message, MessageAck, WAState } from 'whatsapp-web.js';
 import qrcode from 'qrcode-terminal';
 import express, { Request, Response } from 'express';
 
@@ -109,6 +109,15 @@ client.on('auth_failure', (message: string) => {
   console.log('================= Start AUTH_FAILURE =================');
   console.log('Message : ', JSON.stringify(message));
   console.log('================= End AUTH_FAILURE =================');
+});
+
+/**
+ * Disconnected
+ */
+client.on('disconnected', (reason: WAState) => {
+  console.log('================= Start disconnected =================');
+  console.log('Reason disconnected : ', JSON.stringify(reason));
+  console.log('================= End disconnected =================');
 });
 
 client.initialize();
