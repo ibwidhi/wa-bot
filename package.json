@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "tsnd --respawn --transpile-only ./src/app.ts"
+    "dev": "tsnd --respawn --transpile-only ./src/app.ts",
+    "sqs-dev": "tsnd --respawn --transpile-only ./src/sqs.ts"
   },
   "repository": {
     "type": "git",
