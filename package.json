@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "tsnd --respawn --transpile-only ./src/app.ts",
     "sqs-dev": "tsnd --respawn --transpile-only ./src/sqs.ts",
-    "sqs-dev-argv": "tsnd --respawn --transpile-only ./src/sqs.ts APP_ENV=DEV MOBILE=6285159957994"
+    "sqs-dev-argv": "tsnd --respawn --transpile-only ./src/sqs.ts APP_ENV=DEV MOBILE=6285159957994",
+    "build": "tsc --build",
+    "clean": "tsc --build --clean",
+    "start": "npm run build && node ./dist/src/sqs.js"
   },
   "repository": {
     "type": "git",
