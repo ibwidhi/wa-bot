@@ -3,7 +3,8 @@ import { SQSClient } from '@aws-sdk/client-sqs';
 import { client, sendMessage } from './bot/bot';
 import qrcode from 'qrcode-terminal';
 import { Message, MessageAck } from 'whatsapp-web.js';
-import { AWS_ACCESS_KEY, AWS_REGION, AWS_SECRET_KEY } from './config';
+import { AWS_ACCESS_KEY, AWS_REGION, AWS_SECRET_KEY, EVENT_BUS_NAME, SQS_URL } from './config';
+import { EBParams, EBPayload, sendToEventBridge } from './utils/eventBridge';
 
 client.on('qr', (qr: string) => {
   console.log('Generate qr code');
@@ -19,7 +20,7 @@ client.on('ready', () => {
     text: string;
   }
   const app = Consumer.create({
-    queueUrl: 'https://sqs.ap-southeast-1.amazonaws.com/246054987242/WAQueue1',
+    queueUrl: SQS_URL,
     handleMessage: async (message) => {
       console.log('in handleMessage', message);
       // do some work with `message`
@@ -65,6 +66,26 @@ client.on('message', async (message: Message) => {
       const sendSeenResult = await chatIdResult.sendSeen();
       console.log('Data message >>> ', chatIdResult);
       console.log('Send seen >>> ', sendSeenResult);
+
+      const fromNumber = message.from.split('@');
+      const EBPayload: EBPayload = {
+        _id: message.id.id,
+        type: 'message',
+        timestamp: message.timestamp, // timestamp in epoch
+        fromNumber: fromNumber[0],
+        message: {
+          type: 'text',
+          text: message.body,
+        }
+      };
+      const params: EBParams = {
+        EBName: EVENT_BUS_NAME,
+        EBDetailType: 'CILOK',
+        payload: EBPayload,
+        source: 'VENDOR'
+      };
+      const eventBridgeResult = await sendToEventBridge(params);
+      console.log('eventBridgeResult: ', eventBridgeResult);
     }, 500);
   } catch (err) {
     console.log('Error >>> ', err);
@@ -75,12 +96,27 @@ client.on('message', async (message: Message) => {
 /**
  * Status of the message (send, received, seen)
  */
-client.on('message_ack', (message: Message, ack: MessageAck) => {
+client.on('message_ack', async (message: Message, ack: MessageAck) => {
   console.log('================= Start Message ACK =================');
   console.log('Message : ', JSON.stringify(message));
   console.log('ACK >>> ', JSON.stringify(ack));
-  if (ack === 3) {
-    console.log('Send information to sns');
+  if (ack === 2 || ack === 3) {
+    const fromNumber = message.from.split('@');
+    const EBPayload: EBPayload = {
+      _id: message.id.id,
+      type: 'message',
+      timestamp: message.timestamp, // timestamp in epoch
+      fromNumber: fromNumber[0],
+      ackType: ack === 2 ? 'reached' : 'seen'
+    };
+    const params: EBParams = {
+      EBName: EVENT_BUS_NAME,
+      EBDetailType: 'CILOK',
+      payload: EBPayload,
+      source: 'VENDOR'
+    };
+    const eventBridgeResult = await sendToEventBridge(params);
+    console.log('eventBridgeResult: ', eventBridgeResult);
   }
   console.log('================= End Message ACK =================');
 });
